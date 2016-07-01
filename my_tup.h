@@ -221,6 +221,38 @@ constexpr size_t my_tup_size(const my_tup<T>&)
 {
 	return 1;
 }
+template <typename T, typename... Ts, typename U, typename... Us>
+my_tup<T, Ts..., U, Us...> tuple_katze(const my_tup<T, Ts...>& p_first, const my_tup<U, Us...>& p_second)
+{
+	const auto tmp = tuple_append(p_first, p_second.m_elem);
+	return tuple_katze(tmp, p_second.m_rest);
+}
+
+template <typename T, typename... Ts, typename U>
+my_tup<T, Ts..., U> tuple_katze(const my_tup<T, Ts...>& p_first, const my_tup<U>& p_second)
+{
+	return tuple_append(p_first, p_second.m_elem);
+}
+
+template <typename T, typename... Ts, typename U>
+my_tup<T, Ts..., U> tuple_append(const my_tup<T, Ts...>& p_tup, const U& p_elem)
+{
+	my_tup<T, Ts..., U> result{};
+	result.m_elem = p_tup.m_elem;
+	result.m_rest = std::move(tuple_append(p_tup.m_rest, p_elem));
+	return result;
+}
+
+template <typename T, typename U>
+my_tup<T, U> tuple_append(const my_tup<T>& p_tup, const U& p_elem)
+{
+	my_tup<T, U> result{};
+	my_tup<U> result_rest{};
+	result_rest.m_elem = p_elem;
+	result.m_elem = p_tup.m_elem;
+	result.m_rest = std::move(result_rest);
+	return result;
+}
 
 namespace std
 {
