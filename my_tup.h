@@ -1,6 +1,7 @@
 #pragma once
 #ifndef MY_TUP_H
 #define MY_TUP_H
+#include <utility>
 
 template <size_t N, typename T, typename... Rest>
 struct type_by_index : type_by_index<N-1, Rest...> {};
@@ -27,11 +28,41 @@ struct my_tup
 		my_tup() = default;
 		my_tup(const TThis&) = default;
 		my_tup(TThis&&) = default;
-		TThis& operator=(const TThis&) = default;
-		TThis& operator=(TThis&&) = default;
+		
+		my_tup(const T& p_elem, const Ts&... p_rest): m_elem(p_elem), m_rest(p_rest...) {}
+
+		TThis& operator=(const TThis& rhs)
+		{
+			m_elem = rhs.m_elem;
+			m_rest = rhs.m_rest;
+			return *this;
+		}
+
+		template <typename U, typename... Us>
+		TThis& operator=(const my_tup<U, Us...>& rhs)
+		{
+			m_elem = rhs.m_elem;
+			m_rest = rhs.m_rest;
+			return *this;
+		}
+
+		TThis& operator=(TThis&& rhs)
+		{
+			m_elem = std::move(rhs.m_elem);
+			m_rest = std::move(rhs.m_rest);
+			return *this;
+		}
+
+		template <typename U, typename... Us, typename = std::enable_if_t<std::is_convertible<U, T>::value>>
+		TThis& operator=(my_tup<U, Us...>&& rhs)
+		{
+			m_elem = std::move(rhs.m_elem);
+			m_rest = std::move(rhs.m_rest);
+			return *this;
+		}
 
 	public:
-		void swap(TThis& rhs)
+		void swap(TThis& rhs) noexcept
 		{
 			using std::swap;
 			swap(m_elem, rhs.m_elem);
@@ -51,24 +82,52 @@ struct my_tup<T>
 		my_tup() = default;
 		my_tup(const TThis&) = default;
 		my_tup(TThis&&) = default;
-		TThis& operator=(const TThis&) = default;
-		TThis& operator=(TThis&&) = default;
+		/*TThis& operator=(const TThis&) = default;
+		TThis& operator=(TThis&&) = default;*/
+
+		my_tup(const T& p_elem) : m_elem(p_elem) {}
 	public:
-		void swap(TThis& rhs)
+		void swap(TThis& rhs) noexcept
 		{
 			using std::swap;
 			swap(m_elem, rhs.m_elem);
 		}
+
+		template <typename U>
+		TThis& operator=(const my_tup<U>& rhs)
+		{
+			m_elem = rhs.m_elem;
+			return *this;
+		}
+
+		TThis& operator=(const TThis& rhs)
+		{
+			m_elem = rhs.m_elem;
+			return *this;
+		}
+
+		template <typename U>
+		TThis& operator=(my_tup<U>&& rhs)
+		{
+			m_elem = std::move(rhs.m_elem);
+			return *this;
+		}
+
+		TThis& operator=(TThis&& rhs)
+		{
+			m_elem = std::move(rhs.m_elem);
+			return *this;
+		}
 };
 
 template <size_t N, typename T, typename... Ts, typename = std::enable_if_t<N == 0>>
-T& t_get(my_tup<T, Ts...>& p_tup)
+T& t_get(my_tup<T, Ts...>& p_tup) noexcept
 {
 	return p_tup.m_elem;
 }
 
 template <size_t N, typename T, typename... Ts, typename = std::enable_if_t<N != 0>, typename = void>
-typename type_by_index_t<N, T, Ts...>& t_get(my_tup<T, Ts...>& p_tup)
+typename type_by_index_t<N, T, Ts...>& t_get(my_tup<T, Ts...>& p_tup) noexcept
 {
 	return t_get<N - 1>(p_tup.m_rest);
 }
@@ -80,138 +139,103 @@ const type_by_index_t<N, T, Ts...>& ct_get(const my_tup<T, Ts...>& p_tup)
 }
 
 template <size_t N, typename T, typename... Ts, typename = std::enable_if_t<N == 0>>
-const T& ct_get(const my_tup<T, Ts...> p_tup)
+const T& ct_get(const my_tup<T, Ts...> p_tup) noexcept
 {
 	return p_tup.m_elem;
 }
 
 template <size_t N, typename T, typename... Ts, typename = std::enable_if_t<N == 0>>
-T& t_get(const my_tup<T, Ts...>& p_tup)
+T& t_get(const my_tup<T, Ts...>& p_tup) noexcept
 {
 	return p_tup.m_elem;
 }
 
 template <size_t N, typename T, typename... Ts, typename = std::enable_if_t<N != 0>, typename = void>
-typename type_by_index_t<N, T, Ts...>& t_get(const my_tup<T, Ts...>& p_tup)
+typename type_by_index_t<N, T, Ts...>& t_get(const my_tup<T, Ts...>& p_tup) noexcept
 {
 	return t_get<N - 1>(p_tup.m_rest);
 }
 
-template <typename T, typename... Ts>
-typename my_tup<T, Ts...> make_my_tup(T p_first, Ts... p_rest)
+template <typename... Ts>
+typename my_tup<Ts...> make_my_tup(const Ts&... p_elems)
 {
-	my_tup<T, Ts...> result{};
-	result.m_elem = p_first;
-	result.m_rest = make_my_tup(p_rest...);
-	return result;
-}
-
-template <typename T>
-typename my_tup<T> make_my_tup(T p_first)
-{
-	my_tup<T> result{};
-	result.m_elem = p_first;
-	return result;
+	return my_tup<Ts...>(p_elems...);
 }
 
 template <typename T, typename... Ts>
-bool operator==(const my_tup<T, Ts...>& lhs, const my_tup<T, Ts...>& rhs)
+inline bool operator==(const my_tup<T, Ts...>& lhs, const my_tup<T, Ts...>& rhs) noexcept
 {
-	if (!(lhs.m_elem == rhs.m_elem))
-	{
-		return false;
-	}
-	return lhs.m_rest == rhs.m_rest;
+	return lhs.m_elem == rhs.m_elem && lhs.m_rest == rhs.m_rest;
 }
 
 template <typename T>
-bool operator==(const my_tup<T>& lhs, const my_tup<T>& rhs)
+inline bool operator==(const my_tup<T>& lhs, const my_tup<T>& rhs) noexcept
 {
 	return lhs.m_elem == rhs.m_elem;
 }
 
 template <typename T, typename... Ts>
-bool operator<(const my_tup<T, Ts...>& lhs, const my_tup<T, Ts...>& rhs)
+inline bool operator<(const my_tup<T, Ts...>& lhs, const my_tup<T, Ts...>& rhs) noexcept
 {
-	if (!(lhs.m_elem == rhs.m_elem))
-	{
-		return false;
-	}
-	return lhs.m_rest <= rhs.m_rest;
+	return lhs.m_elem < rhs.m_elem || !(lhs.m_elem >= rhs.m_elem) && lhs.m_rest < rhs.m_rest;
 }
 
 template <typename T>
-bool operator<(const my_tup<T>& lhs, const my_tup<T>& rhs)
+inline bool operator<(const my_tup<T>& lhs, const my_tup<T>& rhs) noexcept
 {
 	return lhs.m_elem < rhs.m_elem;
 }
 
 template <typename T, typename... Ts>
-bool operator<=(const my_tup<T, Ts...>& lhs, const my_tup<T, Ts...>& rhs)
+inline bool operator<=(const my_tup<T, Ts...>& lhs, const my_tup<T, Ts...>& rhs) noexcept
 {
-	if (!(lhs.m_elem <= rhs.m_elem))
-	{
-		return false;
-	}
-	return lhs.m_rest <= rhs.m_rest;
+	return lhs.m_elem <= rhs.m_elem || !(lhs.m_elem > rhs.m_elem) && lhs.m_rest <= rhs.m_rest;
 }
 
 template <typename T>
-bool operator<=(const my_tup<T>& lhs, const my_tup<T>& rhs)
+inline bool operator<=(const my_tup<T>& lhs, const my_tup<T>& rhs) noexcept
 {
 	return lhs.m_elem <= rhs.m_elem;
 }
 
 template <typename T, typename... Ts>
-bool operator!=(const my_tup<T, Ts...>& lhs, const my_tup<T, Ts...>& rhs)
+inline bool operator!=(const my_tup<T, Ts...>& lhs, const my_tup<T, Ts...>& rhs) noexcept
 {
-	if (!(lhs.m_elem != rhs.m_elem))
-	{
-		return false;
-	}
-	return lhs.m_rest != rhs.m_rest;
+	return lhs.m_elem != rhs.m_elem || lhs.m_rest != rhs.m_rest;
 }
 
 template <typename T>
-bool operator!=(const my_tup<T>& lhs, const my_tup<T>& rhs)
+inline bool operator!=(const my_tup<T>& lhs, const my_tup<T>& rhs) noexcept
 {
 	return lhs.m_elem != rhs.m_elem;
 }
 
 template <typename T, typename... Ts>
-bool operator>(const my_tup<T, Ts...>& lhs, const my_tup<T, Ts...>& rhs)
+inline bool operator>(const my_tup<T, Ts...>& lhs, const my_tup<T, Ts...>& rhs) noexcept
 {
-	if (!(lhs.m_elem > rhs.m_elem))
-	{
-		return false;
-	}
-	return lhs.m_rest > rhs.m_rest;
+	return lhs.m_elem > rhs.m_elem || !(lhs.m_elem <= rhs.m_elem) && lhs.m_rest > rhs.m_rest;
 }
 
 template <typename T>
-bool operator>(const my_tup<T>& lhs, const my_tup<T>& rhs)
+inline bool operator>(const my_tup<T>& lhs, const my_tup<T>& rhs) noexcept
 {
 	return lhs.m_elem > rhs.m_elem;
 }
 
 template <typename T, typename... Ts>
-bool operator>=(const my_tup<T, Ts...>& lhs, const my_tup<T, Ts...>& rhs)
+inline bool operator>=(const my_tup<T, Ts...>& lhs, const my_tup<T, Ts...>& rhs) noexcept
 {
-	if (!(lhs.m_elem >= rhs.m_elem))
-	{
-		return false;
-	}
-	return lhs.m_rest >= rhs.m_rest;
+	return lhs.m_elem >= rhs.m_elem || !(lhs.m_elem < rhs.m_elem) && lhs.m_rest >= rhs.m_rest;
 }
 
 template <typename T>
-bool operator>=(const my_tup<T>& lhs, const my_tup<T>& rhs)
+bool operator>=(const my_tup<T>& lhs, const my_tup<T>& rhs) noexcept
 {
 	return lhs.m_elem >= rhs.m_elem;
 }
 
 template<typename T, typename... Ts>
-constexpr size_t my_tup_size(const my_tup<T, Ts...>& p_tup)
+constexpr size_t my_tup_size(const my_tup<T, Ts...>& p_tup) noexcept
 {
 	return 1 + my_tup_size(p_tup.m_rest);
 }
@@ -221,43 +245,29 @@ constexpr size_t my_tup_size(const my_tup<T>&)
 {
 	return 1;
 }
+
 template <typename T, typename... Ts, typename U, typename... Us>
-my_tup<T, Ts..., U, Us...> tuple_katze(const my_tup<T, Ts...>& p_first, const my_tup<U, Us...>& p_second)
+constexpr typename my_tup<T, Ts..., U, Us...> my_tup_cat(my_tup<T, Ts...> lhs, my_tup<U, Us...> rhs)
 {
-	const auto tmp = tuple_append(p_first, p_second.m_elem);
-	return tuple_katze(tmp, p_second.m_rest);
+	return my_tup_cat_impl(lhs, std::index_sequence_for<T, Ts...>{}, rhs, std::index_sequence_for<U, Us...>{});
 }
 
-template <typename T, typename... Ts, typename U>
-my_tup<T, Ts..., U> tuple_katze(const my_tup<T, Ts...>& p_first, const my_tup<U>& p_second)
+template <typename T, typename... Ts, size_t... Is, typename U, typename... Us, size_t... Js>
+constexpr typename my_tup<T, Ts..., U, Us...> my_tup_cat_impl(my_tup<T, Ts...>& lhs, std::index_sequence<Is...>, my_tup<U, Us...>& rhs, std::index_sequence<Js...>)
 {
-	return tuple_append(p_first, p_second.m_elem);
+	return make_my_tup(t_get<Is>(lhs)..., t_get<Js>(rhs)...);
 }
 
-template <typename T, typename... Ts, typename U>
-my_tup<T, Ts..., U> tuple_append(const my_tup<T, Ts...>& p_tup, const U& p_elem)
+template <typename... Ts>
+constexpr typename my_tup<Ts&...> my_tup_tie(Ts&... p_elems)
 {
-	my_tup<T, Ts..., U> result{};
-	result.m_elem = p_tup.m_elem;
-	result.m_rest = std::move(tuple_append(p_tup.m_rest, p_elem));
-	return result;
-}
-
-template <typename T, typename U>
-my_tup<T, U> tuple_append(const my_tup<T>& p_tup, const U& p_elem)
-{
-	my_tup<T, U> result{};
-	my_tup<U> result_rest{};
-	result_rest.m_elem = p_elem;
-	result.m_elem = p_tup.m_elem;
-	result.m_rest = std::move(result_rest);
-	return result;
+	return my_tup<Ts&...>(p_elems...);
 }
 
 namespace std
 {
 	template <typename T, typename... Ts>
-	void swap(my_tup<T, Ts...>& lhs, my_tup<T, Ts...>& rhs)
+	void swap(my_tup<T, Ts...>& lhs, my_tup<T, Ts...>& rhs) noexcept
 	{
 		lhs.swap(rhs);
 	}
