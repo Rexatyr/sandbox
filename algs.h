@@ -49,8 +49,8 @@ namespace algs
 			}
 
 			//normal case
-			auto first_mid = (first_bounds.first + first_bounds.second) / 2 - ((first_length % 2) ? 0 : 1);
-			auto second_mid = (second_bounds.first + second_bounds.second) / 2 - ((second_length % 2) ? 0 : 1);
+			auto first_mid = (first_bounds.first + first_bounds.second - 1) / 2;
+			auto second_mid = (second_bounds.first + second_bounds.second - 1) / 2;
 			
 			/*	discard part of the input.
 				compare both input array's medians.
