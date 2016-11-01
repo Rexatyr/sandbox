@@ -10,7 +10,7 @@ namespace algs
 	using bounds = std::pair<std::size_t, std::size_t>;
 
 	template <typename T, std::size_t N>
-	inline T median(const std::array<T, N>& first, const std::array<T, N> second)
+	inline T median(const std::array<T, N>& first, const std::array<T, N>& second)
 	{
 		return internal::median_impl(first, bounds{ 0, N }, second, bounds{ 0, N });
 	}
@@ -22,9 +22,9 @@ namespace algs
 		{
 			//praise the optimizer for letting me do this without runtime penalty without necessarily using evil preprocessor
 			//magic. \[T]/
-			auto first_length = first_bounds.second - first_bounds.first;
-			auto second_length = second_bounds.second - second_bounds.first;
-			auto length = first_bounds.second - first_bounds.first + second_bounds.second - second_bounds.first;
+			const auto first_length = first_bounds.second - first_bounds.first;
+			const auto second_length = second_bounds.second - second_bounds.first;
+			const auto length = first_bounds.second - first_bounds.first + second_bounds.second - second_bounds.first;
 
 			//trivial case (less than 6 elements)
 			if (length < 6)
@@ -49,8 +49,8 @@ namespace algs
 			}
 
 			//normal case
-			auto first_mid = (first_bounds.first + first_bounds.second - 1) / 2;
-			auto second_mid = (second_bounds.first + second_bounds.second - 1) / 2;
+			const auto first_mid = (first_bounds.first + first_bounds.second - 1) / 2;
+			const auto second_mid = (second_bounds.first + second_bounds.second - 1) / 2;
 			
 			/*	discard part of the input.
 				compare both input array's medians.
