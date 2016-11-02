@@ -5,7 +5,7 @@
 #include <tuple>
 #include <iterator>
 #include <type_traits>
-
+#include <assert.h>
 
 namespace algs
 {
@@ -17,8 +17,14 @@ namespace algs
 	{
 		static_assert(std::is_same<std::iterator_traits<It1>::iterator_category, std::random_access_iterator_tag>::value, "median requires random access iterators");
 		static_assert(std::is_same<std::iterator_traits<It2>::iterator_category, std::random_access_iterator_tag>::value, "median requires random access iterators");
+
 		const auto first_length = first_end - first_begin;
 		const auto second_length = second_end - second_begin;
+
+		//todo specialized exception
+		if (first_length != second_length)
+			throw std::runtime_error("median requires both iterator ranges to be of the same size");
+
 		const auto length = first_length + second_length;
 
 		//trivial case (less than 6 elements)
