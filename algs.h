@@ -6,7 +6,6 @@
 
 namespace algs
 {
-	
 	using bounds = std::pair<std::size_t, std::size_t>;
 
 	template <typename T, std::size_t N>
