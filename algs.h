@@ -44,10 +44,9 @@ namespace algs
 		}
 
 		//normal case
-		const auto first_mid = first_begin;
+		auto first_mid = first_begin;
 		std::advance(first_mid, (first_length - 1) / 2);
-		++first_mid;
-		const auto second_mid = second_begin;
+		auto second_mid = second_begin;
 		std::advance(second_mid, (second_length - 1) / 2);
 
 		/*	discard part of the input.
@@ -63,6 +62,7 @@ namespace algs
 		{
 			//adjust bounds. If input length is even, new bounds of the second array has to be adjusted more carefully
 			//to ensure inputs remain the same length.
+			++second_mid;
 			if (0 == second_length % 2)
 				++second_mid;
 			return median(first_mid, first_end, second_begin, second_mid);
@@ -71,6 +71,7 @@ namespace algs
 		{
 			//adjust bounds. If input length is even, new bounds of the first array has to be adjusted more carefully
 			//to ensure inputs remain the same length.
+			++first_mid;
 			if (0 == first_length % 2)
 				++first_mid;
 			return median(first_begin, first_mid, second_mid, second_end);
